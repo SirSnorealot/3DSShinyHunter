@@ -1,0 +1,22 @@
+# Basic input demo.
+# Bare duration numbers are milliseconds. "ms" and "s" suffixes are supported.
+
+log "Starting input demo"
+
+press A
+delay 500ms
+
+press B for 200ms
+delay 1s
+
+# Chords work too.
+press L R START for 150ms
+delay 1s
+
+# Held buttons persist through delay.
+hold LEFT
+delay 750ms
+release LEFT
+
+release_all
+log "Input demo complete"

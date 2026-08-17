@@ -1,0 +1,20 @@
+{
+  "id": "pokemon_ultra_moon",
+  "name": "Pok\u00e9mon Ultra Moon",
+  "generation": 7,
+  "connection": {
+    "gdb_port": 4000,
+    "input_port": 4950
+  },
+  "process": {
+    "name": "momiji",
+    "pid": null
+  },
+  "party": {
+    "base": "0x33F7FA44",
+    "slot_stride": 484,
+    "core_size": 232
+  },
+  "addresses": {
+  }
+}

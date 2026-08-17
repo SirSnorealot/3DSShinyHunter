@@ -1,0 +1,10 @@
+# Demonstrates conditional RAM checks.
+# This does NOT hunt yet; it checks slot 1 and branches.
+
+log "Checking party slot 1"
+
+if shiny party 1
+    log "PARTY SLOT 1 IS SHINY"
+else
+    log "Party slot 1 is not shiny"
+end

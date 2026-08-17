@@ -1,0 +1,22 @@
+# Demonstrates looping and true/false branching.
+# Replace the input sequence later with a real hunt hunt.
+
+repeat forever
+    log "Loop iteration"
+
+    # Put encounter/reset input here.
+    press A
+    delay 1s
+
+    if shiny party 1
+        log "SHINY FOUND - stopping loop"
+        break
+    else
+        log "Not shiny - continuing"
+    end
+
+    delay 500ms
+end
+
+release_all
+log "Hunt stopped"
