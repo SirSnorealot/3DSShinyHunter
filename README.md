@@ -177,6 +177,30 @@ Bare numbers are milliseconds.
 log "Starting hunt"
 ```
 
+Log messages support variable interpolation using `{variable}`:
+
+```text
+set encounters 42
+log "Encounter count: {encounters}"
+```
+
+### Append logs to a text file
+
+A hunt can enable file logging with:
+
+```text
+logfile "logs/ultra_moon.txt"
+```
+
+Every later `log` command is printed to the console **and appended** to that file.
+Parent directories are created automatically. Existing files are not overwritten.
+
+File logging can also be enabled from the command line:
+
+```powershell
+python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/loop_demo.hunt --log-file logs/ultra_moon.txt
+```
+
 ## Party shiny checks
 
 ```text
@@ -251,19 +275,70 @@ repeat forever
 end
 ```
 
-## Variables
+## Variables and arithmetic
 
-Version 0.1 includes simple string variables:
+Variables can contain numbers, booleans, or strings. Numeric-looking values are stored as numbers automatically.
 
 ```text
+set encounters 0
+set target 100
 set mode hunting
+```
 
+Arithmetic commands modify numeric variables in place:
+
+```text
+add encounters 5
+subtract encounters 2
+multiply encounters 3
+divide encounters 2
+mod encounters 10
+```
+
+Short aliases are also supported:
+
+```text
+sub encounters 1
+mul encounters 2
+div encounters 2
+```
+
+For counters, `inc` and `dec` are convenient:
+
+```text
+inc encounters
+inc encounters 5
+dec encounters
+```
+
+Use variables in log messages with braces:
+
+```text
+log "Checking encounter #{encounters}"
+```
+
+Variable comparisons support `==`, `!=`, `>`, `>=`, `<`, and `<=`:
+
+```text
+if var encounters >= 100
+    log "Reached {encounters} encounters"
+    break
+end
+```
+
+The original shorthand equality syntax remains valid:
+
+```text
 if var mode hunting
     log "Hunt mode active"
 end
 ```
 
-This is intentionally minimal for now.
+A complete counter/logging example is included at:
+
+```text
+hunts/demo/counter_logging_demo.hunt
+```
 
 # Game profiles
 

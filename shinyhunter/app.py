@@ -19,6 +19,10 @@ def main(argv=None) -> int:
     parser.add_argument("game", help="Game profile JSON")
     parser.add_argument("hunt", help="Hunt .hunt file")
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument(
+        "--log-file",
+        help="Append hunt log messages to this text file",
+    )
     args = parser.parse_args(argv)
 
     profile = GameProfile.load(args.game)
@@ -44,7 +48,13 @@ def main(argv=None) -> int:
         script_text = Path(args.hunt).read_text(encoding="utf-8")
         nodes = parse_script(script_text)
 
-        ctx = HuntContext(profile, rsp, input_client, verbose=not args.quiet)
+        ctx = HuntContext(
+            profile,
+            rsp,
+            input_client,
+            verbose=not args.quiet,
+            log_file=args.log_file,
+        )
         print(f"[+] Running hunt: {args.hunt}")
         HuntRunner(ctx).run(nodes)
         print("[+] Hunt finished")

@@ -1,0 +1,30 @@
+# Variables, arithmetic, interpolation, comparisons, and file logging.
+
+# All later log messages are also appended to this file.
+logfile "logs/counter_demo.txt"
+
+set encounters 0
+set target 5
+
+log "Starting at {encounters} encounters; target is {target}"
+
+repeat forever
+    inc encounters
+    log "Encounter #{encounters}"
+
+    if var encounters >= 5
+        log "Reached {encounters} encounters"
+        break
+    end
+
+    delay 100ms
+end
+
+# Other arithmetic examples:
+add encounters 10
+subtract encounters 2
+multiply encounters 2
+divide encounters 2
+mod encounters 7
+
+log "Final counter value: {encounters}"

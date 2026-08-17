@@ -4,15 +4,42 @@ from .pokemon import parse_pk7
 
 
 class HuntContext:
-    def __init__(self, profile, rsp, input_client, verbose=True):
+    def __init__(self, profile, rsp, input_client, verbose=True, log_file=None):
         self.profile = profile
         self.rsp = rsp
         self.input = input_client
         self.verbose = verbose
         self.vars: dict[str, object] = {}
+        self.log_file = None
+        if log_file:
+            self.set_log_file(log_file)
+
+    def set_log_file(self, path) -> None:
+        from pathlib import Path
+
+        target = Path(path).expanduser()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        self.log_file = target
+
+    def interpolate(self, text: str) -> str:
+        import re
+
+        pattern = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+        def replace(match):
+            name = match.group(1)
+            if name not in self.vars:
+                raise RuntimeError(f"Undefined variable in message: {name}")
+            return str(self.vars[name])
+
+        return pattern.sub(replace, text)
 
     def log(self, message: str) -> None:
+        message = self.interpolate(message)
         print(message)
+        if self.log_file is not None:
+            with self.log_file.open("a", encoding="utf-8") as handle:
+                handle.write(message + "\n")
 
     def read_party_slot(self, slot: int) -> dict:
         party = self.profile.party

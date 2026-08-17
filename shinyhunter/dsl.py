@@ -30,6 +30,33 @@ def _duration(value: str) -> float:
         raise ScriptError(f"Invalid duration: {value}") from exc
 
 
+def _parse_value(value: str):
+    """Parse integers/floats; leave all other values as strings."""
+    lowered = value.lower()
+    if lowered == "true":
+        return True
+    if lowered == "false":
+        return False
+    try:
+        if any(ch in value for ch in (".", "e", "E")):
+            return float(value)
+        return int(value, 0)
+    except ValueError:
+        return value
+
+
+def _number(value, *, line: int, name: str):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ScriptError(f"Line {line}: variable {name!r} is not numeric")
+    return value
+
+
+def _clean_number(value):
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
 def parse_script(text: str) -> list[Node]:
     root: list[Node] = []
     stack: list[tuple[Node | None, list[Node]]] = [(None, root)]
@@ -109,16 +136,56 @@ class HuntRunner:
 
         if len(args) == 3 and args[0].lower() == "shiny" and args[1].lower() == "party":
             value = self.ctx.party_slot_is_shiny(int(args[2]))
+
         elif len(args) == 2 and args[0].lower() == "shiny" and args[1].lower() in ("opponent", "wild"):
             value = self.ctx.opponent_is_shiny()
-        elif len(args) == 3 and args[0].lower() == "var":
-            name, expected = args[1], args[2]
-            value = str(self.ctx.vars.get(name, "")).lower() == expected.lower()
+
+        elif args and args[0].lower() == "var":
+            if len(args) == 3:
+                # Backwards-compatible shorthand: if var mode hunting
+                name, expected_text = args[1], args[2]
+                if name not in self.ctx.vars:
+                    raise ScriptError(f"Line {line}: undefined variable {name!r}")
+                actual = self.ctx.vars[name]
+                expected = _parse_value(expected_text)
+                value = actual == expected
+
+            elif len(args) == 4:
+                name, operator, expected_text = args[1], args[2], args[3]
+                if name not in self.ctx.vars:
+                    raise ScriptError(f"Line {line}: undefined variable {name!r}")
+                actual = self.ctx.vars[name]
+                expected = _parse_value(expected_text)
+
+                if operator == "==":
+                    value = actual == expected
+                elif operator == "!=":
+                    value = actual != expected
+                elif operator in (">", ">=", "<", "<="):
+                    actual_num = _number(actual, line=line, name=name)
+                    expected_num = _number(expected, line=line, name="comparison value")
+                    if operator == ">":
+                        value = actual_num > expected_num
+                    elif operator == ">=":
+                        value = actual_num >= expected_num
+                    elif operator == "<":
+                        value = actual_num < expected_num
+                    else:
+                        value = actual_num <= expected_num
+                else:
+                    raise ScriptError(
+                        f"Line {line}: unsupported comparison operator {operator!r}"
+                    )
+            else:
+                raise ScriptError(
+                    f"Line {line}: use 'if var NAME VALUE' or "
+                    f"'if var NAME OP VALUE'"
+                )
         else:
             raise ScriptError(
                 f"Line {line}: condition must be 'shiny party N', "
                 f"'shiny opponent', 'shiny wild', their 'not' forms, "
-                f"or 'var NAME VALUE'"
+                f"or a variable comparison"
             )
 
         return not value if negate else value
@@ -161,10 +228,61 @@ class HuntRunner:
             elif op == "log":
                 self.ctx.log(" ".join(a))
 
+            elif op == "logfile":
+                if len(a) != 1:
+                    raise ScriptError(f"Line {node.line}: logfile PATH")
+                self.ctx.set_log_file(self.ctx.interpolate(a[0]))
+
             elif op == "set":
                 if len(a) < 2:
                     raise ScriptError(f"Line {node.line}: set NAME VALUE")
-                self.ctx.vars[a[0]] = " ".join(a[1:])
+                raw = " ".join(a[1:])
+                self.ctx.vars[a[0]] = _parse_value(self.ctx.interpolate(raw))
+
+            elif op in ("add", "subtract", "sub", "multiply", "mul", "divide", "div", "mod"):
+                if len(a) != 2:
+                    raise ScriptError(f"Line {node.line}: {op} NAME VALUE")
+                name, raw_amount = a
+                if name not in self.ctx.vars:
+                    raise ScriptError(f"Line {node.line}: undefined variable {name!r}")
+                current = _number(self.ctx.vars[name], line=node.line, name=name)
+                amount = _number(
+                    _parse_value(self.ctx.interpolate(raw_amount)),
+                    line=node.line,
+                    name="amount",
+                )
+
+                if op == "add":
+                    result = current + amount
+                elif op in ("subtract", "sub"):
+                    result = current - amount
+                elif op in ("multiply", "mul"):
+                    result = current * amount
+                elif op in ("divide", "div"):
+                    if amount == 0:
+                        raise ScriptError(f"Line {node.line}: division by zero")
+                    result = current / amount
+                else:
+                    if amount == 0:
+                        raise ScriptError(f"Line {node.line}: modulo by zero")
+                    result = current % amount
+
+                self.ctx.vars[name] = _clean_number(result)
+
+            elif op in ("inc", "dec"):
+                if len(a) not in (1, 2):
+                    raise ScriptError(f"Line {node.line}: {op} NAME [AMOUNT]")
+                name = a[0]
+                if name not in self.ctx.vars:
+                    raise ScriptError(f"Line {node.line}: undefined variable {name!r}")
+                current = _number(self.ctx.vars[name], line=node.line, name=name)
+                amount = 1 if len(a) == 1 else _number(
+                    _parse_value(self.ctx.interpolate(a[1])),
+                    line=node.line,
+                    name="amount",
+                )
+                result = current + amount if op == "inc" else current - amount
+                self.ctx.vars[name] = _clean_number(result)
 
             elif op == "if":
                 branch = node.body if self._condition(a, node.line) else (node.else_body or [])
