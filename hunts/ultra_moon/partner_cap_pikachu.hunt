@@ -1,0 +1,62 @@
+set encounters 0
+
+repeat forever
+
+    inc encounters
+
+    #long because we don't have in Pokedex
+    delay 5s
+    press A
+    delay 3s
+
+    press A
+    delay 3s
+
+    press A
+    delay 5s
+
+    press A
+    delay 3s
+
+    press A
+    delay 10s
+
+    press A
+    delay 3s
+
+    press B
+    delay 3s
+
+    press A
+    delay 3s
+
+    press A
+    delay 3s
+
+    press A
+    delay 3s
+
+    if shiny party 6
+        log "SHINY FOUND - stopping loop"
+        break
+    else
+        
+    end
+
+    press A
+    delay 3s
+
+    # Restart 3DS
+    press L R START for 150ms
+    delay 10s
+
+    press A
+    delay 5s
+
+    press A
+    delay 5s
+
+end
+
+release_all
+log "SHINY FOUND! Encounters: {encounters}"

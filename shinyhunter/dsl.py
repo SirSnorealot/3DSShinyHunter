@@ -222,8 +222,7 @@ class HuntRunner:
             elif op in ("delay", "sleep"):
                 if len(a) != 1:
                     raise ScriptError(f"Line {node.line}: delay requires one duration")
-                # Keep re-sending held controller state during waits.
-                self.ctx.input.pump(_duration(a[0]))
+                self.ctx.wait(_duration(a[0]))
 
             elif op == "log":
                 self.ctx.log(" ".join(a))

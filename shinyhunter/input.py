@@ -68,9 +68,27 @@ class InputRedirection:
     def pump(self, seconds: float) -> None:
         end = time.monotonic() + max(0.0, seconds)
         packet = self._packet()
-        while time.monotonic() < end:
+        while True:
+            remaining = end - time.monotonic()
+            if remaining <= 0:
+                break
             self.sock.sendto(packet, self.address)
-            time.sleep(self.interval)
+            time.sleep(min(self.interval, remaining))
+
+    def wait(self, seconds: float) -> float:
+        """Wait for the requested duration and return actual elapsed seconds.
+
+        If buttons are held, keep transmitting the held controller state so
+        InputRedirection remains active. Otherwise use a normal monotonic sleep;
+        a delay should not depend on UDP packet-pump throughput.
+        """
+        seconds = max(0.0, seconds)
+        start = time.monotonic()
+        if self.held:
+            self.pump(seconds)
+        else:
+            time.sleep(seconds)
+        return time.monotonic() - start
 
     def hold(self, *buttons: str) -> None:
         for button in buttons:

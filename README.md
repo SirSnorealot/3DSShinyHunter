@@ -171,6 +171,21 @@ sleep 1s
 
 Bare numbers are milliseconds.
 
+For diagnosing timing, run with:
+
+```powershell
+python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/ultra_moon/partner_cap_pikachu.hunt --trace-timing
+```
+
+Each delay will print its requested and actual elapsed duration, for example:
+
+```text
+[TIMING] delay requested=2.000s actual=2.001s
+```
+
+A normal `delay` now uses a direct monotonic sleep when no button is held. If a
+button is held, the input state continues to be transmitted for the duration.
+
 ## Logging
 
 ```text

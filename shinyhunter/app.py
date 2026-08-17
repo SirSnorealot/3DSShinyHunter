@@ -23,6 +23,11 @@ def main(argv=None) -> int:
         "--log-file",
         help="Append hunt log messages to this text file",
     )
+    parser.add_argument(
+        "--trace-timing",
+        action="store_true",
+        help="Print requested and actual elapsed time for each delay",
+    )
     args = parser.parse_args(argv)
 
     profile = GameProfile.load(args.game)
@@ -54,6 +59,7 @@ def main(argv=None) -> int:
             input_client,
             verbose=not args.quiet,
             log_file=args.log_file,
+            trace_timing=args.trace_timing,
         )
         print(f"[+] Running hunt: {args.hunt}")
         HuntRunner(ctx).run(nodes)
