@@ -121,6 +121,38 @@ Test:
 python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/opponent_shiny_demo.hunt
 ```
 
+
+## Safe game restarts
+
+Do not soft-reset a game with raw `press L R START` while GDB remains attached.
+Use the dedicated hunt command instead:
+
+```text
+restart_game 10s 30s
+```
+
+Arguments are optional:
+
+- First duration: how long to wait after sending the reset chord before reconnecting.
+- Second duration: maximum time to wait for the configured game process to become attachable.
+
+The command performs:
+
+```text
+release inputs
+→ detach GDB
+→ close old GDB TCP session
+→ send L+R+START
+→ wait for title restart
+→ reconnect to Luma
+→ rediscover configured process name
+→ attach to new PID
+→ resume game
+```
+
+This is intended for title soft resets where the old process is destroyed and a new
+process is launched.
+
 # `.hunt` language
 
 `.hunt` files are plain-text hunt scripts.

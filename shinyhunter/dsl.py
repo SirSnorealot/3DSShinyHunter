@@ -224,6 +224,15 @@ class HuntRunner:
                     raise ScriptError(f"Line {node.line}: delay requires one duration")
                 self.ctx.wait(_duration(a[0]))
 
+            elif op == "restart_game":
+                if len(a) > 2:
+                    raise ScriptError(
+                        f"Line {node.line}: restart_game [SETTLE_DELAY] [TIMEOUT]"
+                    )
+                settle = _duration(a[0]) if len(a) >= 1 else 10.0
+                timeout = _duration(a[1]) if len(a) >= 2 else 30.0
+                self.ctx.restart_game(settle, timeout)
+
             elif op == "log":
                 self.ctx.log(" ".join(a))
 

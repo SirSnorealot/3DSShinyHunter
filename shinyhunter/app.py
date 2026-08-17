@@ -36,18 +36,14 @@ def main(argv=None) -> int:
 
     try:
         print(f"[+] Game: {profile.name}")
-        print(f"[+] Connecting GDB {args.ip}:{profile.gdb_port}")
-        rsp.connect()
-
-        pid = rsp.find_process(profile.process_name, profile.process_id)
+        rsp.configure_target(profile.process_name, profile.process_id)
+        print(
+            f"[+] GDB RAM mode: ephemeral (attach only during memory reads)"
+        )
+        print(f"[+] Checking for process {profile.process_name!r}")
+        pid = rsp.wait_for_target(timeout=10.0)
         print(f"[+] Process {profile.process_name!r}: PID {pid}")
-        reply = rsp.attach(pid)
-        print(f"[+] Attached: {reply[:32]!r}...")
-
-        # Attach stops the title. Scripts should operate against a running game;
-        # memory checks will interrupt/resume transparently.
-        rsp.resume()
-        print("[+] Game resumed")
+        print("[+] Debugger detached; game left running normally")
         print(f"[+] InputRedirection target: {args.ip}:{profile.input_port}")
 
         script_text = Path(args.hunt).read_text(encoding="utf-8")
@@ -75,11 +71,6 @@ def main(argv=None) -> int:
     finally:
         try:
             input_client.release_all()
-        except Exception:
-            pass
-        try:
-            if rsp.attached_pid is not None and not rsp.running:
-                rsp.resume()
         except Exception:
             pass
         input_client.close()

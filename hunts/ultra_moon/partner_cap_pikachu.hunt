@@ -1,62 +1,90 @@
+# Partner Cap Pikachu soft-reset hunt for Pokémon Ultra Moon.
+#
+# This version logs every major stage so a failure can be localized.
+# RAM checks use a short-lived GDB attachment: attach -> read -> detach -> close.
+# The game is therefore not under debugger control during the soft reset.
+
+logfile "logs/partner_cap_pikachu.txt"
 set encounters 0
+
+log "[PIKACHU] Hunt started"
 
 repeat forever
 
     inc encounters
+    log "[PIKACHU] ===== Encounter #{encounters} ====="
+    log "[PIKACHU] Waiting for initial dialogue / Pokédex sequence"
 
-    #long because we don't have in Pokedex
+    # Long because we do not have Pikachu registered in the Pokédex.
     delay 5s
+    log "[PIKACHU] Step 1: press A"
     press A
     delay 3s
 
+    log "[PIKACHU] Step 2: press A"
     press A
     delay 3s
 
+    log "[PIKACHU] Step 3: press A"
     press A
     delay 5s
 
+    log "[PIKACHU] Step 4: press A"
     press A
     delay 3s
 
+    log "[PIKACHU] Step 5: press A"
     press A
     delay 10s
 
+    log "[PIKACHU] Step 6: press A"
     press A
     delay 3s
 
+    log "[PIKACHU] Step 7: press B"
     press B
     delay 3s
 
+    log "[PIKACHU] Step 8: press A"
     press A
     delay 3s
 
+    log "[PIKACHU] Step 9: press A"
     press A
     delay 3s
 
+    log "[PIKACHU] Step 10: press A"
     press A
     delay 3s
 
+    log "[PIKACHU] Reading party slot 6 for encounter #{encounters}"
+    log "[PIKACHU] GDB should attach only for this RAM read, then detach immediately"
     if shiny party 6
-        log "SHINY FOUND - stopping loop"
+        log "[PIKACHU] SHINY FOUND on encounter #{encounters}"
         break
     else
-        
+        log "[PIKACHU] Encounter #{encounters} is not shiny"
     end
 
+    log "[PIKACHU] Advancing dialogue before reset"
     press A
     delay 3s
 
-    # Restart 3DS
-    press L R START for 150ms
-    delay 10s
+    log "[PIKACHU] Beginning debugger-free game restart after encounter #{encounters}"
+    restart_game 10s 30s
+    log "[PIKACHU] Restart complete; momiji detected and debugger remains detached"
 
+    log "[PIKACHU] Post-restart step 1: press A"
     press A
     delay 5s
 
+    log "[PIKACHU] Post-restart step 2: press A"
     press A
     delay 5s
+
+    log "[PIKACHU] Ready for next encounter"
 
 end
 
 release_all
-log "SHINY FOUND! Encounters: {encounters}"
+log "[PIKACHU] Hunt stopped. Encounters: {encounters}"

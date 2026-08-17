@@ -56,7 +56,13 @@ class HuntContext:
             raise ValueError("Party slot must be 1..6")
 
         address = party.base + (slot - 1) * party.slot_stride
-        raw = self.rsp.read_memory(address, party.core_size)
+        if self.verbose:
+            self.log(
+                f"[GDB] Opening short-lived RAM session for party slot {slot}"
+            )
+        raw = self.rsp.read_memory_ephemeral(address, party.core_size)
+        if self.verbose:
+            self.log("[GDB] RAM read complete; debugger detached and connection closed")
         pkm = parse_pk7(raw)
         pkm["slot"] = slot
         pkm["address"] = address
@@ -79,7 +85,11 @@ class HuntContext:
                 f"{self.profile.name} has no opponent layout configured"
             )
 
-        raw = self.rsp.read_memory(opponent.base, opponent.core_size)
+        if self.verbose:
+            self.log("[GDB] Opening short-lived RAM session for opponent")
+        raw = self.rsp.read_memory_ephemeral(opponent.base, opponent.core_size)
+        if self.verbose:
+            self.log("[GDB] RAM read complete; debugger detached and connection closed")
         pkm = parse_pk7(raw)
         pkm["address"] = opponent.base
         pkm["present"] = pkm["species"] != 0
@@ -97,4 +107,45 @@ class HuntContext:
         if not pkm["present"]:
             return False
         return bool(pkm["shiny"])
+
+    def restart_game(self, settle_seconds: float = 10.0, reconnect_timeout: float = 30.0) -> None:
+        """Soft-reset while no debugger is attached to the game.
+
+        RAM reads use short-lived GDB sessions, so restart should normally find
+        no active attachment at all. The GDB socket is force-closed before the
+        reset as a final safety measure. After the settle delay, we only poll
+        the process list to confirm that momiji is back; we do not attach.
+        """
+        self.log("[RESTART] Preparing soft reset with no persistent debugger")
+
+        self.input.release_all()
+        self.log("[RESTART] Released all controller inputs")
+
+        # The normal state is already disconnected because every RAM read
+        # detaches immediately. Force-close anyway so a stale socket can never
+        # survive into title teardown.
+        if self.rsp.attached_pid is not None:
+            self.log(
+                f"[RESTART] WARNING: unexpected active debugger PID "
+                f"{self.rsp.attached_pid}; closing session before reset"
+            )
+        self.rsp.close()
+        self.log("[RESTART] Confirmed GDB TCP session is closed")
+
+        self.log("[RESTART] Sending L+R+START soft-reset chord")
+        self.input.press(["L", "R", "START"], duration=0.150, after=0.100)
+        self.log("[RESTART] Soft-reset chord sent")
+
+        self.log(f"[RESTART] Waiting {settle_seconds:.3f}s for title restart")
+        self.wait(settle_seconds)
+
+        self.log(
+            f"[RESTART] Waiting for {self.profile.process_name!r} to appear "
+            f"without attaching debugger"
+        )
+        pid = self.rsp.wait_for_target(timeout=reconnect_timeout)
+        self.log(
+            f"[RESTART] Process {self.profile.process_name!r} is available "
+            f"as PID {pid}; debugger remains detached"
+        )
 
