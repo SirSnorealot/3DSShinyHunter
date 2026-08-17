@@ -37,3 +37,30 @@ class HuntContext:
                 f"shiny={pkm['shiny']}"
             )
         return bool(pkm["shiny"])
+
+    def read_opponent(self) -> dict:
+        opponent = self.profile.opponent
+        if opponent is None:
+            raise RuntimeError(
+                f"{self.profile.name} has no opponent layout configured"
+            )
+
+        raw = self.rsp.read_memory(opponent.base, opponent.core_size)
+        pkm = parse_pk7(raw)
+        pkm["address"] = opponent.base
+        pkm["present"] = pkm["species"] != 0
+        return pkm
+
+    def opponent_is_shiny(self) -> bool:
+        pkm = self.read_opponent()
+        if self.verbose:
+            self.log(
+                f"[CHECK] opponent species={pkm['species']} "
+                f"PID=0x{pkm['pid']:08X} xor={pkm['shiny_xor']} "
+                f"shiny={pkm['shiny']} "
+                f"address=0x{pkm['address']:08X}"
+            )
+        if not pkm["present"]:
+            return False
+        return bool(pkm["shiny"])
+

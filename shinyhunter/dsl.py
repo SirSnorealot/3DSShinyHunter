@@ -109,13 +109,16 @@ class HuntRunner:
 
         if len(args) == 3 and args[0].lower() == "shiny" and args[1].lower() == "party":
             value = self.ctx.party_slot_is_shiny(int(args[2]))
+        elif len(args) == 2 and args[0].lower() == "shiny" and args[1].lower() in ("opponent", "wild"):
+            value = self.ctx.opponent_is_shiny()
         elif len(args) == 3 and args[0].lower() == "var":
             name, expected = args[1], args[2]
             value = str(self.ctx.vars.get(name, "")).lower() == expected.lower()
         else:
             raise ScriptError(
                 f"Line {line}: condition must be 'shiny party N', "
-                f"'not shiny party N', or 'var NAME VALUE'"
+                f"'shiny opponent', 'shiny wild', their 'not' forms, "
+                f"or 'var NAME VALUE'"
             )
 
         return not value if negate else value

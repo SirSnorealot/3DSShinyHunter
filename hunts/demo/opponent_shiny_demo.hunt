@@ -1,0 +1,13 @@
+# Pokémon Ultra Moon opponent shiny test.
+# Start this hunt while already in a wild battle.
+
+log "Checking current opponent"
+
+if shiny opponent
+    log "SHINY OPPONENT FOUND"
+else
+    log "Current opponent is not shiny"
+end
+
+release_all
+log "Opponent check complete"

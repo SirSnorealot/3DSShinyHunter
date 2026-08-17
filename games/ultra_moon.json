@@ -1,6 +1,6 @@
 {
   "id": "pokemon_ultra_moon",
-  "name": "Pok\u00e9mon Ultra Moon",
+  "name": "Pokémon Ultra Moon",
   "generation": 7,
   "connection": {
     "gdb_port": 4000,
@@ -16,5 +16,13 @@
     "core_size": 232
   },
   "addresses": {
+    "wild_opponent": "0x3254F4AC",
+    "wild_opponent_double_slot_2": "0x32663BF0",
+    "sos_last_called_helper": "0x30039888",
+    "sos_previous_helpers": "0x3002F9A0"
+  },
+  "opponent": {
+    "base": "0x3254F4AC",
+    "core_size": 232
   }
 }

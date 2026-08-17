@@ -54,7 +54,7 @@ hunts/ultra_moon/
 From the project root:
 
 ```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/ultra_moon/party_shiny_demo.hunt
+python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/party_shiny_demo.hunt
 ```
 
 Replace `192.168.1.50` with your 3DS IP address.
@@ -62,13 +62,13 @@ Replace `192.168.1.50` with your 3DS IP address.
 ### Input test
 
 ```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/ultra_moon/input_demo.hunt
+python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/input_demo.hunt
 ```
 
 ### Loop / branching test
 
 ```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/ultra_moon/loop_demo.hunt
+python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/loop_demo.hunt
 ```
 
 Use `Ctrl+C` as an emergency stop.
@@ -78,6 +78,48 @@ The runner attempts to:
 - Release all controller inputs.
 - Resume the game if it was paused by GDB.
 - Close both network connections cleanly.
+
+
+## Ultra Moon opponent RAM
+
+Ultra Moon's primary opponent Pokémon is configured at:
+
+```text
+0x3254F4AC
+```
+
+Additional known Gen VII battle addresses are stored in `games/ultra_moon.json`:
+
+```text
+Primary opponent:          0x3254F4AC
+Double-battle opponent 2:  0x32663BF0
+SOS last-called helper:    0x30039888
+SOS previous helpers:      0x3002F9A0
+```
+
+While already in a wild battle:
+
+```text
+if shiny opponent
+    log "SHINY FOUND"
+else
+    log "Not shiny"
+end
+```
+
+`shiny wild` is an alias, and negation is supported:
+
+```text
+if not shiny opponent
+    log "Keep hunting"
+end
+```
+
+Test:
+
+```powershell
+python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/opponent_shiny_demo.hunt
+```
 
 # `.hunt` language
 
@@ -253,7 +295,13 @@ Example:
     "slot_stride": 484,
     "core_size": 232
   },
-  "addresses": {}
+  "opponent": {
+    "base": "0x3254F4AC",
+    "core_size": 232
+  },
+  "addresses": {
+    "wild_opponent": "0x3254F4AC"
+  }
 }
 ```
 

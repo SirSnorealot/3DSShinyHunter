@@ -21,6 +21,12 @@ class PartyConfig:
 
 
 @dataclass
+class OpponentConfig:
+    base: int
+    core_size: int = 232
+
+
+@dataclass
 class GameProfile:
     id: str
     name: str
@@ -30,6 +36,7 @@ class GameProfile:
     input_port: int
     generation: int
     party: PartyConfig | None
+    opponent: OpponentConfig | None
     addresses: dict[str, int]
 
     @classmethod
@@ -42,6 +49,14 @@ class GameProfile:
                 base=_int_value(party_raw["base"]),
                 slot_stride=_int_value(party_raw["slot_stride"]),
                 core_size=_int_value(party_raw.get("core_size", 232)),
+            )
+
+        opponent_raw = raw.get("opponent")
+        opponent = None
+        if opponent_raw:
+            opponent = OpponentConfig(
+                base=_int_value(opponent_raw["base"]),
+                core_size=_int_value(opponent_raw.get("core_size", 232)),
             )
 
         addresses = {
@@ -57,5 +72,6 @@ class GameProfile:
             input_port=int(raw.get("connection", {}).get("input_port", 4950)),
             generation=int(raw["generation"]),
             party=party,
+            opponent=opponent,
             addresses=addresses,
         )
