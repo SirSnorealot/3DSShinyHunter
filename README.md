@@ -1,6 +1,6 @@
 # 3DSShinyHunter
 
-3DSShinyHunter is a Python framework for automating shiny-hunting workflows on real Nintendo 3DS hardware.
+3DSShinyHunter is a Python framework for automating shiny-hunting workflows on real Nintendo 3DS hardware. Built with the help of AI. I will be adding more hunts over time.
 
 It uses:
 
