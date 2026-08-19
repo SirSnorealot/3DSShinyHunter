@@ -1,0 +1,15 @@
+Author: SirSnorealot
+Version:
+  Major: 0
+  Minor: 1
+  Revision: 0
+Targets:
+  - 0
+Title: 3DSShinyHunter Ultra Moon Bridge
+Summary: Read-only PK7 RAM bridge for 3DSShinyHunter
+Description: |
+  Read-only UDP bridge used by the 3DSShinyHunter Python hunt engine.
+  The plugin exposes only allow-listed Pokemon Ultra Moon PK7 memory records.
+Compatibility: Pokemon Ultra Moon
+MemorySize: 5MiB
+UsePrivateMemory: true

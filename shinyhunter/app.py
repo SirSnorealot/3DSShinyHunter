@@ -9,6 +9,8 @@ from .dsl import ScriptError, HuntRunner, parse_script
 from .input import InputRedirection
 from .profile import GameProfile
 from .rsp import LumaRSP, RSPError
+from .plugin import PluginMemoryClient, PluginError
+from .memory import GDBMemoryBackend, PluginMemoryBackend
 
 
 def main(argv=None) -> int:
@@ -19,6 +21,11 @@ def main(argv=None) -> int:
     parser.add_argument("game", help="Game profile JSON")
     parser.add_argument("hunt", help="Hunt .hunt file")
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument(
+        "--memory-backend",
+        choices=("gdb", "plugin"),
+        help="Override the game profile memory backend",
+    )
     parser.add_argument(
         "--log-file",
         help="Append hunt log messages to this text file",
@@ -31,19 +38,29 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     profile = GameProfile.load(args.game)
-    rsp = LumaRSP(args.ip, profile.gdb_port)
     input_client = InputRedirection(args.ip, profile.input_port)
+    backend_name = args.memory_backend or profile.memory_backend
+    memory = None
 
     try:
         print(f"[+] Game: {profile.name}")
-        rsp.configure_target(profile.process_name, profile.process_id)
-        print(
-            f"[+] GDB RAM mode: ephemeral (attach only during memory reads)"
-        )
-        print(f"[+] Checking for process {profile.process_name!r}")
-        pid = rsp.wait_for_target(timeout=10.0)
-        print(f"[+] Process {profile.process_name!r}: PID {pid}")
-        print("[+] Debugger detached; game left running normally")
+        if backend_name == "plugin":
+            plugin = PluginMemoryClient(args.ip, profile.plugin_port)
+            memory = PluginMemoryBackend(plugin)
+            print(f"[+] 3GX memory plugin target: {args.ip}:{profile.plugin_port}")
+            hello = memory.wait_ready(timeout=10.0)
+            print(f"[+] 3GX plugin ready: {hello}")
+        else:
+            rsp = LumaRSP(args.ip, profile.gdb_port)
+            rsp.configure_target(profile.process_name, profile.process_id)
+            memory = GDBMemoryBackend(rsp)
+            print("[+] GDB RAM mode: ephemeral (attach only during memory reads)")
+            print(f"[+] Checking for process {profile.process_name!r}")
+            pid = memory.wait_ready(timeout=10.0)
+            print(f"[+] Process {profile.process_name!r}: PID {pid}")
+            print("[+] Debugger detached; game left running normally")
+
+        print(f"[+] Memory backend: {backend_name}")
         print(f"[+] InputRedirection target: {args.ip}:{profile.input_port}")
 
         script_text = Path(args.hunt).read_text(encoding="utf-8")
@@ -51,7 +68,7 @@ def main(argv=None) -> int:
 
         ctx = HuntContext(
             profile,
-            rsp,
+            memory,
             input_client,
             verbose=not args.quiet,
             log_file=args.log_file,
@@ -65,7 +82,7 @@ def main(argv=None) -> int:
     except KeyboardInterrupt:
         print("\n[!] Interrupted by user")
         return 130
-    except (OSError, RSPError, ScriptError, RuntimeError, ValueError) as exc:
+    except (OSError, RSPError, PluginError, ScriptError, RuntimeError, ValueError) as exc:
         print(f"\n[ERROR] {exc}")
         return 1
     finally:
@@ -74,7 +91,8 @@ def main(argv=None) -> int:
         except Exception:
             pass
         input_client.close()
-        rsp.close()
+        if memory is not None:
+            memory.close()
 
 
 if __name__ == "__main__":

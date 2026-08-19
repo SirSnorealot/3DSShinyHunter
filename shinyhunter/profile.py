@@ -34,6 +34,8 @@ class GameProfile:
     process_id: int | None
     gdb_port: int
     input_port: int
+    plugin_port: int
+    memory_backend: str
     generation: int
     party: PartyConfig | None
     opponent: OpponentConfig | None
@@ -70,6 +72,8 @@ class GameProfile:
             process_id=_int_value(raw["process"].get("pid")),
             gdb_port=int(raw.get("connection", {}).get("gdb_port", 4000)),
             input_port=int(raw.get("connection", {}).get("input_port", 4950)),
+            plugin_port=int(raw.get("connection", {}).get("plugin_port", 4951)),
+            memory_backend=str(raw.get("memory_backend", "gdb")).lower(),
             generation=int(raw["generation"]),
             party=party,
             opponent=opponent,

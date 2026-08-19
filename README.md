@@ -1,442 +1,87 @@
 # 3DSShinyHunter
 
-3DSShinyHunter is a Python framework for automating shiny-hunting workflows on real Nintendo 3DS hardware. Built with the help of AI. I will be adding more hunts over time.
+3DSShinyHunter is a Python framework for automating shiny-hunting workflows on real Nintendo 3DS hardware running Luma3DS. It combines Rosalina InputRedirection with game-specific memory backends and a small `.hunt` scripting language. Written with the help of AI.
 
-It uses:
+The project keeps reusable connection/input/script logic under `shinyhunter/`, game RAM layouts under `games/`, hunt scripts under `hunts/`, and 3GX memory plugins under `plugin/`.
 
-- **Luma3DS GDB** for reading game RAM.
-- **Rosalina InputRedirection** for controller input.
-- **Game profiles** for process names and game-specific RAM layouts.
-- A compact **`.hunt` scripting language** for hunt logic.
+## Supported Ultra games
 
-The project is intentionally split so that connection/input code is reusable, while RAM layouts and hunt scripts remain game-specific.
+Pokémon **Ultra Sun** and **Ultra Moon** should use the included **3GX plugins** for normal hunting. The plugins avoid repeated Luma GDB attachment during long hunts and provide a small, read-only PK7 memory bridge to the Python runner.
 
-## Why hunts are game-specific
+The distributed Ultra plugins are intended for **North American copies**:
 
-A hunt script belongs to a specific game because different Pokémon games can have different:
+| Game | Profile | North American title ID |
+|---|---|---|
+| Pokémon Ultra Sun | `games/ultra_sun.json` | `00040000001B5000` |
+| Pokémon Ultra Moon | `games/ultra_moon.json` | `00040000001B5100` |
 
-- Process names.
-- RAM layouts.
-- Encounter structures.
-- Battle-state addresses.
-- Menu timings.
-- Reset sequences.
-- Overworld behavior.
+Both Ultra profiles default to the plugin memory backend. GDB is retained as an optional development/debugging backend.
 
-For that reason, hunts are grouped under:
+For Ultra Sun/Ultra Moon, `restart_game` uses a **full HOME-menu close and relaunch**, not the in-game L+R+START soft reset. This keeps each encounter on a fresh title/plugin instance and avoids a known Luma InputRedirection failure mode associated with repeated USUM soft resets.
+
+## Requirements
+
+- Python 3.10+ on the PC
+- Nintendo 3DS with modern Luma3DS
+- Rosalina InputRedirection enabled
+- Luma Plugin Loader enabled for the Ultra-game plugin backend
+- PC and 3DS on the same network
+
+## Quick start
+
+Prebuilt versions of the Ultra plugins are included. For **Pokémon Ultra Sun** and **Pokémon Ultra Moon**, install and enable the matching 3GX plugin before running a hunt. These prebuilt plugins are for **North American copies**.
+
+### Install the Ultra plugins
+
+Copy the plugin that matches your game to the exact title-ID folder on the 3DS SD card:
+
+| Game | Source file | SD destination |
+|---|---|---|
+| Ultra Sun | `plugin/ultra_sun/3DSShinyHunter-UltraSun.3gx` | `sd:/luma/plugins/00040000001B5000/3DSShinyHunter-UltraSun.3gx` |
+| Ultra Moon | `plugin/ultra_moon/3DSShinyHunter-UltraMoon.3gx` | `sd:/luma/plugins/00040000001B5100/3DSShinyHunter-UltraMoon.3gx` |
+
+Keep each plugin in its own title-ID folder. Luma loads a game-specific `.3gx` from the folder matching the launched title.
+
+### Enable the Luma Plugin Loader
+
+After copying the plugin to the SD card:
+
+1. Boot the 3DS normally.
+2. Press **L + D-Pad Down + Select** to open the Rosalina menu.
+3. Move to **Plugin Loader**.
+4. Press **A** and make sure it shows **[Enabled]**.
+5. Exit Rosalina.
+6. Launch Ultra Sun or Ultra Moon normally.
+
+The Plugin Loader setting stays enabled until you turn it off, so this normally only needs to be done once.
+
+When the correct 3DSShinyHunter plugin loads, it starts the read-only memory bridge used by the Python runner. If the runner cannot contact the plugin, first verify the game-specific `.3gx` is in the exact title-ID folder above and that **Plugin Loader** is enabled.
+
+If you want to build the plugins from source, full WSL setup/build instructions are in **[BUILD.md](BUILD.md)**.
+
+Then run a hunt from the project root, replacing the IP with your 3DS address.
+
+Ultra Sun example:
+
+```powershell
+python run_hunt.py 192.168.1.50 games/ultra_sun.json hunts/ultra_sun/partner_cap_pikachu.hunt
+```
+
+Ultra Moon example:
+
+```powershell
+python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/ultra_moon/partner_cap_pikachu.hunt
+```
+
+Use `Ctrl+C` as an emergency stop.
+
+## Hunt scripts
+
+Hunts are plain-text `.hunt` files and are normally organized by game:
 
 ```text
 hunts/<game_id>/
 ```
 
-For example:
-
-```text
-hunts/ultra_moon/
-```
-
-A future ultra_moon hunt would live under:
-
-```text
-hunts/ultra_moon/
-```
-
-## Requirements
-
-- Python 3.10+
-- A Nintendo 3DS running Luma3DS
-- Luma GDB enabled
-- Rosalina InputRedirection enabled
-- The 3DS and PC on the same network
-
-## Running a hunt
-
-From the project root:
-
-```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/party_shiny_demo.hunt
-```
-
-Replace `192.168.1.50` with your 3DS IP address.
-
-### Input test
-
-```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/input_demo.hunt
-```
-
-### Loop / branching test
-
-```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/loop_demo.hunt
-```
-
-Use `Ctrl+C` as an emergency stop.
-
-The runner attempts to:
-
-- Release all controller inputs.
-- Resume the game if it was paused by GDB.
-- Close both network connections cleanly.
-
-
-## Ultra Moon opponent RAM
-
-Ultra Moon's primary opponent Pokémon is configured at:
-
-```text
-0x3254F4AC
-```
-
-Additional known Gen VII battle addresses are stored in `games/ultra_moon.json`:
-
-```text
-Primary opponent:          0x3254F4AC
-Double-battle opponent 2:  0x32663BF0
-SOS last-called helper:    0x30039888
-SOS previous helpers:      0x3002F9A0
-```
-
-While already in a wild battle:
-
-```text
-if shiny opponent
-    log "SHINY FOUND"
-else
-    log "Not shiny"
-end
-```
-
-`shiny wild` is an alias, and negation is supported:
-
-```text
-if not shiny opponent
-    log "Keep hunting"
-end
-```
-
-Test:
-
-```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/opponent_shiny_demo.hunt
-```
-
-
-## Safe game restarts
-
-Do not soft-reset a game with raw `press L R START` while GDB remains attached.
-Use the dedicated hunt command instead:
-
-```text
-restart_game 10s 30s
-```
-
-Arguments are optional:
-
-- First duration: how long to wait after sending the reset chord before reconnecting.
-- Second duration: maximum time to wait for the configured game process to become attachable.
-
-The command performs:
-
-```text
-release inputs
-→ detach GDB
-→ close old GDB TCP session
-→ send L+R+START
-→ wait for title restart
-→ reconnect to Luma
-→ rediscover configured process name
-→ attach to new PID
-→ resume game
-```
-
-This is intended for title soft resets where the old process is destroyed and a new
-process is launched.
-
-# `.hunt` language
-
-`.hunt` files are plain-text hunt scripts.
-
-Blank lines and lines beginning with `#` are ignored.
-
-## Button presses
-
-```text
-press A
-press B for 200ms
-press L R START for 150ms
-```
-
-Multiple buttons on the same `press` line are sent as a chord.
-
-Supported digital buttons:
-
-```text
-A B X Y
-L R
-START SELECT
-UP DOWN LEFT RIGHT
-```
-
-## Held input
-
-```text
-hold LEFT
-delay 750ms
-release LEFT
-```
-
-Release every currently held button:
-
-```text
-release_all
-```
-
-## Delays
-
-```text
-delay 500
-delay 500ms
-delay 2s
-sleep 1s
-```
-
-Bare numbers are milliseconds.
-
-For diagnosing timing, run with:
-
-```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/ultra_moon/partner_cap_pikachu.hunt --trace-timing
-```
-
-Each delay will print its requested and actual elapsed duration, for example:
-
-```text
-[TIMING] delay requested=2.000s actual=2.001s
-```
-
-A normal `delay` now uses a direct monotonic sleep when no button is held. If a
-button is held, the input state continues to be transmitted for the duration.
-
-## Logging
-
-```text
-log "Starting hunt"
-```
-
-Log messages support variable interpolation using `{variable}`:
-
-```text
-set encounters 42
-log "Encounter count: {encounters}"
-```
-
-### Append logs to a text file
-
-A hunt can enable file logging with:
-
-```text
-logfile "logs/ultra_moon.txt"
-```
-
-Every later `log` command is printed to the console **and appended** to that file.
-Parent directories are created automatically. Existing files are not overwritten.
-
-File logging can also be enabled from the command line:
-
-```powershell
-python run_hunt.py 192.168.1.50 games/ultra_moon.json hunts/demo/loop_demo.hunt --log-file logs/ultra_moon.txt
-```
-
-## Party shiny checks
-
-```text
-if shiny party 1
-    log "Slot 1 is shiny"
-else
-    log "Slot 1 is not shiny"
-end
-```
-
-Negation:
-
-```text
-if not shiny party 1
-    log "Keep hunting"
-end
-```
-
-Party slots are numbered `1` through `6`.
-
-When a shiny check runs, 3DSShinyHunter:
-
-1. Interrupts the game through Luma GDB.
-2. Reads the configured party slot.
-3. Decrypts the PK7 structure.
-4. Calculates Gen VII shiny XOR.
-5. Resumes the game.
-6. Returns true or false to the hunt script.
-
-## Loops
-
-Repeat a fixed number of times:
-
-```text
-repeat 10
-    press A
-    delay 500ms
-end
-```
-
-Run indefinitely:
-
-```text
-repeat forever
-    press A
-    delay 1s
-end
-```
-
-Inside a loop:
-
-```text
-break
-continue
-```
-
-Example:
-
-```text
-repeat forever
-    press A
-    delay 1s
-
-    if shiny party 1
-        log "SHINY FOUND"
-        break
-    else
-        log "Not shiny"
-    end
-
-    delay 500ms
-end
-```
-
-## Variables and arithmetic
-
-Variables can contain numbers, booleans, or strings. Numeric-looking values are stored as numbers automatically.
-
-```text
-set encounters 0
-set target 100
-set mode hunting
-```
-
-Arithmetic commands modify numeric variables in place:
-
-```text
-add encounters 5
-subtract encounters 2
-multiply encounters 3
-divide encounters 2
-mod encounters 10
-```
-
-Short aliases are also supported:
-
-```text
-sub encounters 1
-mul encounters 2
-div encounters 2
-```
-
-For counters, `inc` and `dec` are convenient:
-
-```text
-inc encounters
-inc encounters 5
-dec encounters
-```
-
-Use variables in log messages with braces:
-
-```text
-log "Checking encounter #{encounters}"
-```
-
-Variable comparisons support `==`, `!=`, `>`, `>=`, `<`, and `<=`:
-
-```text
-if var encounters >= 100
-    log "Reached {encounters} encounters"
-    break
-end
-```
-
-The original shorthand equality syntax remains valid:
-
-```text
-if var mode hunting
-    log "Hunt mode active"
-end
-```
-
-A complete counter/logging example is included at:
-
-```text
-hunts/demo/counter_logging_demo.hunt
-```
-
-# Game profiles
-
-Game profiles live under:
-
-```text
-games/
-```
-
-Each profile contains game-specific configuration.
-
-Example:
-
-```json
-{
-  "id": "pokemon_ultra_moon",
-  "name": "Pokémon Ultra Moon",
-  "generation": 7,
-  "connection": {
-    "gdb_port": 4000,
-    "input_port": 4950
-  },
-  "process": {
-    "name": "momiji",
-    "pid": null
-  },
-  "party": {
-    "base": "0x33F7FA44",
-    "slot_stride": 484,
-    "core_size": 232
-  },
-  "opponent": {
-    "base": "0x3254F4AC",
-    "core_size": 232
-  },
-  "addresses": {
-    "wild_opponent": "0x3254F4AC"
-  }
-}
-```
-
-The `addresses` section is reserved for named game-specific RAM locations such as:
-
-```json
-{
-  "addresses": {
-    "wild_opponent": "0x...",
-    "battle_state": "0x..."
-  }
-}
-```
-
-That will let hunt scripts use semantic commands while the actual RAM addresses stay in the profile.
+They support button presses, delays, loops, variables, logging, soft resets, party shiny checks, and wild/opponent shiny checks. The complete language and runner reference is in **[COMMANDS.md](COMMANDS.md)**.
 

@@ -198,7 +198,7 @@ class HuntRunner:
             if op == "press":
                 if not a:
                     raise ScriptError(f"Line {node.line}: press requires button(s)")
-                duration = 0.10
+                duration = 0.18
                 buttons = a
                 # Optional: press A B for 250ms
                 if len(a) >= 2 and a[-2].lower() == "for":

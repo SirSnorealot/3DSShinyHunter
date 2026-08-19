@@ -4,9 +4,9 @@ from .pokemon import parse_pk7
 
 
 class HuntContext:
-    def __init__(self, profile, rsp, input_client, verbose=True, log_file=None, trace_timing=False):
+    def __init__(self, profile, memory, input_client, verbose=True, log_file=None, trace_timing=False):
         self.profile = profile
-        self.rsp = rsp
+        self.memory = memory
         self.input = input_client
         self.verbose = verbose
         self.vars: dict[str, object] = {}
@@ -58,11 +58,11 @@ class HuntContext:
         address = party.base + (slot - 1) * party.slot_stride
         if self.verbose:
             self.log(
-                f"[GDB] Opening short-lived RAM session for party slot {slot}"
+                f"[{self.memory.label}] Reading party slot {slot} RAM"
             )
-        raw = self.rsp.read_memory_ephemeral(address, party.core_size)
+        raw = self.memory.read_memory(address, party.core_size)
         if self.verbose:
-            self.log("[GDB] RAM read complete; debugger detached and connection closed")
+            self.log(f"[{self.memory.label}] Party RAM read complete")
         pkm = parse_pk7(raw)
         pkm["slot"] = slot
         pkm["address"] = address
@@ -74,7 +74,7 @@ class HuntContext:
             self.log(
                 f"[CHECK] party[{slot}] species={pkm['species']} "
                 f"PID=0x{pkm['pid']:08X} xor={pkm['shiny_xor']} "
-                f"shiny={pkm['shiny']}"
+                f"valid={pkm['valid']} shiny={pkm['shiny']}"
             )
         return bool(pkm["shiny"])
 
@@ -86,13 +86,12 @@ class HuntContext:
             )
 
         if self.verbose:
-            self.log("[GDB] Opening short-lived RAM session for opponent")
-        raw = self.rsp.read_memory_ephemeral(opponent.base, opponent.core_size)
+            self.log(f"[{self.memory.label}] Reading opponent RAM")
+        raw = self.memory.read_memory(opponent.base, opponent.core_size)
         if self.verbose:
-            self.log("[GDB] RAM read complete; debugger detached and connection closed")
+            self.log(f"[{self.memory.label}] Opponent RAM read complete")
         pkm = parse_pk7(raw)
         pkm["address"] = opponent.base
-        pkm["present"] = pkm["species"] != 0
         return pkm
 
     def opponent_is_shiny(self) -> bool:
@@ -101,7 +100,7 @@ class HuntContext:
             self.log(
                 f"[CHECK] opponent species={pkm['species']} "
                 f"PID=0x{pkm['pid']:08X} xor={pkm['shiny_xor']} "
-                f"shiny={pkm['shiny']} "
+                f"valid={pkm['valid']} shiny={pkm['shiny']} "
                 f"address=0x{pkm['address']:08X}"
             )
         if not pkm["present"]:
@@ -109,43 +108,60 @@ class HuntContext:
         return bool(pkm["shiny"])
 
     def restart_game(self, settle_seconds: float = 10.0, reconnect_timeout: float = 30.0) -> None:
-        """Soft-reset while no debugger is attached to the game.
+        """Restart the game and wait for the selected memory backend to return.
 
-        RAM reads use short-lived GDB sessions, so restart should normally find
-        no active attachment at all. The GDB socket is force-closed before the
-        reset as a final safety measure. After the settle delay, we only poll
-        the process list to confirm that momiji is back; we do not attach.
+        USUM with the 3GX backend deliberately uses a HOME-menu close/relaunch
+        instead of the game's L+R+START soft reset. Luma has a long-standing
+        USUM/InputRedirection failure mode around repeated in-game soft resets,
+        and a full title relaunch also guarantees a fresh plugin/network state.
         """
-        self.log("[RESTART] Preparing soft reset with no persistent debugger")
+        if self.memory.kind != "plugin":
+            self.log(
+                f"[RESTART] Preparing soft reset; memory backend={self.memory.kind}"
+            )
+            self.input.release_all()
+            self.log("[RESTART] Released all controller inputs")
+            self.memory.before_restart()
+            self.log(f"[RESTART] {self.memory.label} backend prepared for restart")
+            self.log("[RESTART] Sending L+R+START soft-reset chord")
+            self.input.press(["L", "R", "START"], duration=0.150, after=0.100)
+            self.log("[RESTART] Soft-reset chord sent")
+            self.log(f"[RESTART] Waiting {settle_seconds:.3f}s for title restart")
+            self.wait(settle_seconds)
+            self.log(f"[RESTART] Waiting for {self.memory.label} backend to become ready")
+            ready = self.memory.wait_ready(timeout=reconnect_timeout)
+            self.log(f"[RESTART] {self.memory.label} backend ready: {ready}")
+            return
 
+        self.log("[RESTART] USUM plugin mode: full HOME-menu title relaunch")
         self.input.release_all()
         self.log("[RESTART] Released all controller inputs")
+        self.memory.before_restart()
 
-        # The normal state is already disconnected because every RAM read
-        # detaches immediately. Force-close anyway so a stale socket can never
-        # survive into title teardown.
-        if self.rsp.attached_pid is not None:
-            self.log(
-                f"[RESTART] WARNING: unexpected active debugger PID "
-                f"{self.rsp.attached_pid}; closing session before reset"
-            )
-        self.rsp.close()
-        self.log("[RESTART] Confirmed GDB TCP session is closed")
+        self.log("[RESTART] Pressing HOME through InputRedirection special-button bit")
+        self.input.press_home(duration=0.250, after=0.300)
+        self.wait(2.0)
 
-        self.log("[RESTART] Sending L+R+START soft-reset chord")
-        self.input.press(["L", "R", "START"], duration=0.150, after=0.100)
-        self.log("[RESTART] Soft-reset chord sent")
+        self.log("[RESTART] HOME Menu: pressing X to close the suspended title")
+        self.input.press(["X"], duration=0.200, after=0.200)
+        self.wait(1.0)
 
-        self.log(f"[RESTART] Waiting {settle_seconds:.3f}s for title restart")
+        self.log("[RESTART] HOME Menu: pressing A to confirm Close")
+        self.input.press(["A"], duration=0.200, after=0.200)
+
+        self.log("[RESTART] Waiting for old plugin instance to disappear")
+        self.memory.wait_stopped(timeout=12.0)
+        self.log("[RESTART] Old plugin instance stopped")
+
+        # Give HOME Menu a moment to finish title teardown and restore the
+        # selected software icon before launching it again.
+        self.wait(1.5)
+        self.log("[RESTART] HOME Menu: pressing A to relaunch the selected title")
+        self.input.press(["A"], duration=0.200, after=0.250)
+
+        self.log(f"[RESTART] Waiting {settle_seconds:.3f}s for title startup")
         self.wait(settle_seconds)
 
-        self.log(
-            f"[RESTART] Waiting for {self.profile.process_name!r} to appear "
-            f"without attaching debugger"
-        )
-        pid = self.rsp.wait_for_target(timeout=reconnect_timeout)
-        self.log(
-            f"[RESTART] Process {self.profile.process_name!r} is available "
-            f"as PID {pid}; debugger remains detached"
-        )
-
+        self.log("[RESTART] Waiting for new PLUGIN instance to become ready")
+        ready = self.memory.wait_ready(timeout=reconnect_timeout)
+        self.log(f"[RESTART] New PLUGIN instance ready: {ready}")

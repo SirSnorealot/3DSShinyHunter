@@ -49,11 +49,20 @@ def parse_pk7(encrypted: bytes) -> dict:
     pid = struct.unpack_from("<I", d, 0x18)[0]
     shiny_xor = tid ^ sid ^ (pid & 0xFFFF) ^ (pid >> 16)
 
+    # Species 0 is an empty PK7 slot, not a Pokemon.  Restrict "valid" to the
+    # Gen 7 national-dex range as an additional guard against uninitialized or
+    # transient RAM being mistaken for a shiny because its XOR happens to be
+    # below 16.
+    valid = 1 <= species <= 807
+    shiny = valid and shiny_xor < 16
+
     return {
         "species": species,
         "tid": tid,
         "sid": sid,
         "pid": pid,
         "shiny_xor": shiny_xor,
-        "shiny": shiny_xor < 16,
+        "valid": valid,
+        "present": valid,
+        "shiny": shiny,
     }

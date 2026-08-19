@@ -1,6 +1,6 @@
 {
-  "id": "pokemon_ultra_moon",
-  "name": "Pokémon Ultra Moon",
+  "id": "pokemon_ultra_sun",
+  "name": "Pokémon Ultra Sun",
   "generation": 7,
   "connection": {
     "gdb_port": 4000,
