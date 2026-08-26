@@ -1,0 +1,124 @@
+# Type: Null restart hunt for Pokémon Ultra Moon.
+
+logfile "logs/type_null.txt"
+set encounters 0
+
+log "[TYPE:NULL] Hunt started"
+
+repeat forever
+
+    inc encounters
+    log "[TYPE:NULL] ===== Encounter #{encounters} ====="
+
+    log "[TYPE:NULL] Walking right to Wicke"
+    hold CPAD_RIGHT
+    delay 1s
+    release CPAD_RIGHT
+    delay 1s
+
+    log "[TYPE:NULL] Step 1: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 2: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 3: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 4: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 5: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 6: press A"
+    press A
+    delay 10s
+
+    log "[TYPE:NULL] Step 7: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 8: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 9: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 10: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 11: press A"
+    press A
+    delay 10s
+
+    log "[TYPE:NULL] Step 12: press A"
+    press A
+    delay 10s
+
+    log "[TYPE:NULL] Step 13: press A"
+    press A
+    delay 10s
+
+    log "[TYPE:NULL] Step 14: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 15: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Step 16: press B"
+    press B
+    delay 4s
+
+    log "[TYPE:NULL] Step 17: press B"
+    press B
+    delay 4s
+
+    log "[TYPE:NULL] Step 18: press A"
+    press A
+    delay 4s
+
+    log "[TYPE:NULL] Reading party slot 6 for encounter #{encounters}"
+    if shiny party 6
+        log "[TYPE:NULL] SHINY FOUND on encounter #{encounters}"
+        break
+    else
+        log "[TYPE:NULL] Encounter #{encounters} is not shiny"
+    end
+
+    log "[TYPE:NULL] Beginning plugin-safe game restart after encounter #{encounters}"
+    restart_game 10s 30s
+    log "[TYPE:NULL] Full title relaunch complete; new plugin instance is ready"
+
+    log "[TYPE:NULL] Post-restart step 1: press A"
+    delay 5s
+    press A
+    delay 5s
+
+    log "[TYPE:NULL] Post-restart step 2: press A"
+    delay 5s
+    press A
+    delay 5s
+
+    log "[TYPE:NULL] Ready for next encounter"
+
+end
+
+release_all
+log "[TYPE:NULL]"
+log "[TYPE:NULL]           *"
+log "[TYPE:NULL]          ***"
+log "[TYPE:NULL]     *************"
+log "[TYPE:NULL]   ***  SHINY  ***"
+log "[TYPE:NULL]     *************"
+log "[TYPE:NULL]          ***"
