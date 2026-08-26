@@ -1,10 +1,4 @@
 # Partner Cap Pikachu restart hunt for Pokémon Ultra Moon.
-#
-# This version logs every major stage so a failure can be localized.
-# RAM checks use the 3GX plugin bridge.
-# restart_game performs a full HOME-menu close/relaunch in plugin mode; it does
-# not use USUM's L+R+START soft reset because that path is unreliable with
-# Luma InputRedirection.
 
 logfile "logs/partner_cap_pikachu.txt"
 set encounters 0
@@ -60,7 +54,6 @@ repeat forever
     delay 4s
 
     log "[PIKACHU] Reading party slot 6 for encounter #{encounters}"
-    log "[PIKACHU] Plugin RAM bridge will read party slot 6 without GDB"
     if shiny party 6
         log "[PIKACHU] SHINY FOUND on encounter #{encounters}"
         break
