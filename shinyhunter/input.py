@@ -41,6 +41,16 @@ BUTTONS = {
     "Y": 11,
 }
 
+# Circle pad axes are 12-bit with 0x7FF as neutral; the packet field is
+# (y << 12) | x.  Values below are full tilt on one axis.
+CPAD_AXIS_NEUTRAL = 0x7FF
+CPAD_BUTTONS = {
+    "CPAD_RIGHT": (0xFFF, CPAD_AXIS_NEUTRAL),
+    "CPAD_LEFT": (0x000, CPAD_AXIS_NEUTRAL),
+    "CPAD_UP": (CPAD_AXIS_NEUTRAL, 0xFFF),
+    "CPAD_DOWN": (CPAD_AXIS_NEUTRAL, 0x000),
+}
+
 
 class InputError(RuntimeError):
     pass
@@ -68,6 +78,8 @@ class InputRedirection:
     def _hid(self) -> int:
         hid = HID_NEUTRAL
         for button in self.held:
+            if button in CPAD_BUTTONS:
+                continue
             try:
                 bit = BUTTONS[button]
             except KeyError as exc:
@@ -75,12 +87,25 @@ class InputRedirection:
             hid &= ~(1 << bit)
         return hid
 
+    def _cpad(self) -> int:
+        x = CPAD_AXIS_NEUTRAL
+        y = CPAD_AXIS_NEUTRAL
+        for button in self.held:
+            axes = CPAD_BUTTONS.get(button)
+            if axes is None:
+                continue
+            if axes[0] != CPAD_AXIS_NEUTRAL:
+                x = axes[0]
+            if axes[1] != CPAD_AXIS_NEUTRAL:
+                y = axes[1]
+        return (y << 12) | x
+
     def _packet(self) -> bytes:
         return struct.pack(
             "<IIIII",
             self._hid(),
             TOUCH_NEUTRAL,
-            CPAD_NEUTRAL,
+            self._cpad(),
             NEW3DS_NEUTRAL,
             self.special_buttons,
         )
@@ -122,7 +147,7 @@ class InputRedirection:
     def _validate_buttons(self, buttons: tuple[str, ...] | list[str]) -> list[str]:
         normalized = [button.upper() for button in buttons]
         for button in normalized:
-            if button not in BUTTONS:
+            if button not in BUTTONS and button not in CPAD_BUTTONS:
                 raise InputError(f"Unknown button: {button}")
         return normalized
 
