@@ -12,4 +12,4 @@ The wire format is documented in [`PROTOCOL.md`](PROTOCOL.md).
 
 ## Luma requirement
 
-This plugin uses UDP sockets and is built with `UsePrivateMemory: true`. Use Luma3DS 13.3.3 or newer; 13.4+ is recommended. If the plugin fails at startup, the OSD now reports each networking initialization stage.
+This plugin uses UDP sockets and is built with `UsePrivateMemory: true`. Use Luma3DS 13.3.3 or newer; 13.4+ is recommended.

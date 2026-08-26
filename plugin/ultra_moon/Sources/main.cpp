@@ -204,11 +204,9 @@ namespace
 
         // CTRPF plugins are not normal libctru applications, so explicitly
         // initialize the service manager before asking libctru for soc:U.
-        OSD::Notify("3DSShinyHunter: srvInit");
         const Result srvResult = srvInit();
         if (R_FAILED(srvResult))
         {
-            OSD::Notify(Utils::Format("3DSShinyHunter: srvInit failed %08lX", (unsigned long)srvResult));
             return false;
         }
         gSrvInitialized = true;
@@ -218,29 +216,22 @@ namespace
         // aligned work allocation and can panic when given arbitrary plugin
         // mapped storage. Allocate the same way libctru examples do, only much
         // smaller for our tiny UDP protocol.
-        OSD::Notify("3DSShinyHunter: plugin memory=5 MiB");
-        OSD::Notify("3DSShinyHunter: allocating 64 KiB SOC buffer");
         gSocBuffer = static_cast<u32 *>(memalign(0x1000, kSocBufferSize));
         if (!gSocBuffer)
         {
-            OSD::Notify("3DSShinyHunter: 64 KiB SOC allocation failed");
             CleanupNetwork();
             return false;
         }
         std::memset(gSocBuffer, 0, kSocBufferSize);
-        OSD::Notify("3DSShinyHunter: SOC buffer allocated");
 
-        OSD::Notify("3DSShinyHunter: socInit");
         const Result socResult = socInit(gSocBuffer, kSocBufferSize);
         if (R_FAILED(socResult))
         {
-            OSD::Notify(Utils::Format("3DSShinyHunter: socInit failed %08lX", (unsigned long)socResult));
             CleanupNetwork();
             return false;
         }
         gSocInitialized = true;
 
-        OSD::Notify("3DSShinyHunter: socket");
         // Luma's InputRedirection retries socket creation because SOC can take
         // a short moment to become usable after initialization.
         for (int attempt = 0; attempt < 15 && gSocket < 0; ++attempt)
@@ -251,7 +242,6 @@ namespace
         }
         if (gSocket < 0)
         {
-            OSD::Notify(Utils::Format("3DSShinyHunter: socket failed errno=%d", errno));
             CleanupNetwork();
             return false;
         }
@@ -263,27 +253,22 @@ namespace
         local.sin_addr.s_addr = gethostid();
         local.sin_port = htons(kPort);
 
-        OSD::Notify(Utils::Format("3DSShinyHunter: bind UDP %d", kPort));
         if (bind(gSocket, reinterpret_cast<sockaddr *>(&local), sizeof(local)) < 0)
         {
-            OSD::Notify(Utils::Format("3DSShinyHunter: bind failed errno=%d", errno));
             CleanupNetwork();
             return false;
         }
 
-        OSD::Notify("3DSShinyHunter: starting server thread");
         gRunning = true;
         gServerThread = threadCreate(
             ServerMain, nullptr, 32 * 1024, 0x30, -2, true);
         if (!gServerThread)
         {
-            OSD::Notify("3DSShinyHunter: threadCreate failed");
             gRunning = false;
             CleanupNetwork();
             return false;
         }
 
-        OSD::Notify("3DSShinyHunter: UDP 4951 ready");
         return true;
     }
 
@@ -325,7 +310,6 @@ namespace CTRPluginFramework
         // framework initialization inside Pokemon USUM.
         if (!StartServer())
         {
-            OSD::Notify("3DSShinyHunter: network bridge NOT running");
             // Stay loaded for diagnostics, but still cooperate with a title
             // reset instead of trapping the process in an infinite loop.
             while (!gProcessExiting)

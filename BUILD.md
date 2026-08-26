@@ -77,8 +77,6 @@ On the 3DS:
 2. Enable **Plugin Loader**.
 3. Launch the matching Ultra game.
 
-The plugin should display an OSD notification that 3DSShinyHunter is listening on UDP port `4951`.
-
 ## Test the plugin backend
 
 Ultra Sun:
