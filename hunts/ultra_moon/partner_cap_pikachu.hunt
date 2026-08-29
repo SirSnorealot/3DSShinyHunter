@@ -1,6 +1,6 @@
 # Partner Cap Pikachu restart hunt for Pokémon Ultra Moon.
 
-logfile "logs/partner_cap_pikachu.txt"
+#logfile "logs/partner_cap_pikachu.txt"
 set encounters 0
 
 log "[PIKACHU] Hunt started"

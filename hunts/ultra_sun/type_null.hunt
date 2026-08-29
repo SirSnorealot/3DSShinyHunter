@@ -1,6 +1,6 @@
 # Type: Null restart hunt for Pokémon Ultra Sun.
 
-logfile "logs/type_null.txt"
+#logfile "logs/type_null.txt"
 set encounters 0
 
 log "[TYPE:NULL] Hunt started"
