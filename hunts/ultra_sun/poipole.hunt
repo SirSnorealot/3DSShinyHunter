@@ -1,0 +1,94 @@
+# Poipole restart hunt for Pokémon Ultra Sun.
+
+#logfile "logs/poipole.txt"
+set encounters 0
+
+log "[POIPOLE] Hunt started"
+
+repeat forever
+
+    inc encounters
+    log "[POIPOLE] ===== Encounter #{encounters} ====="
+
+    log "[POIPOLE] Step 1: press A"
+    press A
+    delay 4s
+
+    log "[POIPOLE] Step 2: press A"
+    press A
+    delay 4s
+
+    log "[POIPOLE] Step 3: press A"
+    press A
+    delay 4s
+
+    log "[POIPOLE] Step 4: press A"
+    press A
+    delay 4s
+
+    log "[POIPOLE] Step 5: press A"
+    press A
+    delay 10s
+
+    log "[POIPOLE] Step 6: press A"
+    press A
+    delay 10s
+
+    log "[POIPOLE] Step 7: press A"
+    press A
+    delay 10s
+
+    log "[POIPOLE] Step 8: press A"
+    press A
+    delay 4s
+
+    log "[POIPOLE] Step 9: press A"
+    press A
+    delay 4s
+
+    log "[POIPOLE] Step 10: press B"
+    press B
+    delay 4s
+
+    log "[POIPOLE] Step 11: press B"
+    press B
+    delay 4s
+
+    log "[POIPOLE] Step 12: press A"
+    press A
+    delay 4s
+
+    log "[POIPOLE] Reading party slot 6 for encounter #{encounters}"
+    if shiny party 6
+        log "[POIPOLE] SHINY FOUND on encounter #{encounters}"
+        break
+    else
+        log "[POIPOLE] Encounter #{encounters} is not shiny"
+    end
+
+    log "[POIPOLE] Beginning plugin-safe game restart after encounter #{encounters}"
+    restart_game 10s 30s
+    log "[POIPOLE] Full title relaunch complete; new plugin instance is ready"
+
+    log "[POIPOLE] Post-restart step 1: press A"
+    delay 5s
+    press A
+    delay 5s
+
+    log "[POIPOLE] Post-restart step 2: press A"
+    delay 5s
+    press A
+    delay 5s
+
+    log "[POIPOLE] Ready for next encounter"
+
+end
+
+release_all
+log "[POIPOLE]"
+log "[POIPOLE]           *"
+log "[POIPOLE]          ***"
+log "[POIPOLE]     *************"
+log "[POIPOLE]   ***  SHINY  ***"
+log "[POIPOLE]     *************"
+log "[POIPOLE]          ***"
