@@ -28,7 +28,7 @@ repeat forever
 
     log "[POIPOLE] Step 5: press A"
     press A
-    delay 10s
+    delay 4s
 
     log "[POIPOLE] Step 6: press A"
     press A
@@ -40,21 +40,25 @@ repeat forever
 
     log "[POIPOLE] Step 8: press A"
     press A
-    delay 4s
+    delay 10s
 
     log "[POIPOLE] Step 9: press A"
     press A
     delay 4s
 
-    log "[POIPOLE] Step 10: press B"
-    press B
+    log "[POIPOLE] Step 10: press A"
+    press A
     delay 4s
 
     log "[POIPOLE] Step 11: press B"
     press B
     delay 4s
 
-    log "[POIPOLE] Step 12: press A"
+    log "[POIPOLE] Step 12: press B"
+    press B
+    delay 4s
+
+    log "[POIPOLE] Step 13: press A"
     press A
     delay 4s
 
