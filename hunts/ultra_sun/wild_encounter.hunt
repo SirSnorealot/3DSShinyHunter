@@ -1,0 +1,70 @@
+# Wild encounter hunt for Pokémon Ultra Sun.
+# Runs in a circle with the circle pad until a wild battle starts,
+# checks the opponent, and runs from non-shinies.
+
+#logfile "logs/wild_encounter.txt"
+set encounters 0
+
+log "[WILD] Hunt started"
+
+repeat forever
+
+    inc encounters
+    log "[WILD] ===== Encounter attempt #{encounters} ====="
+
+    log "[WILD] Running in a circle for ~10 seconds"
+    repeat 16
+        hold CPAD_RIGHT
+        delay 150ms
+        release CPAD_RIGHT
+        hold CPAD_DOWN
+        delay 150ms
+        release CPAD_DOWN
+        hold CPAD_LEFT
+        delay 150ms
+        release CPAD_LEFT
+        hold CPAD_UP
+        delay 150ms
+        release CPAD_UP
+    end
+    release_all
+
+    log "[WILD] Waiting for battle intro to finish"
+    delay 14s
+
+    log "[WILD] Checking opponent for encounter #{encounters}"
+    if shiny opponent
+        log "[WILD] SHINY FOUND on encounter #{encounters}"
+        break
+    else
+        log "[WILD] Encounter #{encounters} is not shiny"
+    end
+
+    log "[WILD] Running from battle"
+    press DOWN
+    delay 500ms
+    press DOWN
+    delay 500ms
+    press DOWN
+    delay 500ms
+    press A
+    delay 6s
+
+    log "[WILD] Battle over, pressing A"
+    press A
+    delay 3s
+    press A
+    delay 3s
+
+    log "[WILD] Ready for next encounter"
+
+end
+
+release_all
+log "[WILD]"
+log "[WILD]           *"
+log "[WILD]          ***"
+log "[WILD]     *************"
+log "[WILD]   ***  SHINY  ***"
+log "[WILD]     *************"
+log "[WILD]          ***"
