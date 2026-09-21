@@ -16,6 +16,7 @@ repeat forever
     repeat 80
         hold CPAD_RIGHT
         release CPAD_RIGHT
+        hold CPAD_DOWN
         release CPAD_DOWN
         hold CPAD_LEFT
         release CPAD_LEFT

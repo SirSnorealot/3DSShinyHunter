@@ -12,19 +12,15 @@ repeat forever
     inc encounters
     log "[WILD] ===== Encounter attempt #{encounters} ====="
 
-    log "[WILD] Running in a circle for ~10 seconds"
-    repeat 16
+    log "[WILD] Running in a circle"
+    repeat 80
         hold CPAD_RIGHT
-        delay 150ms
         release CPAD_RIGHT
         hold CPAD_DOWN
-        delay 150ms
         release CPAD_DOWN
         hold CPAD_LEFT
-        delay 150ms
         release CPAD_LEFT
         hold CPAD_UP
-        delay 150ms
         release CPAD_UP
     end
     release_all
